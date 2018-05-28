@@ -8,9 +8,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.prefs.Preferences;
 
-import javax.swing.JOptionPane;
-
 import org.apache.commons.io.FileUtils;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,12 +38,12 @@ public class PdfGenManager {
 
 	@GetMapping(value = {"/showForm", "/"})
 	public String showForm() {
-		return "generator-page" ;
+		return "gen/generator-page" ;
 	}
 
 	@GetMapping("/text-upload")
 	public String textUpload() {
-		return "text-upload";
+		return "gen/text-upload";
 	}
 
 	//*******************************************
@@ -76,37 +75,39 @@ public class PdfGenManager {
 	@PostMapping("addPdfTemplate")
 	public static String addPdfTemplate(@RequestParam("file") MultipartFile file) throws IllegalStateException, IOException {
 		if((inFile = UpDownController.uploadPdf(file)) == (null)) {
-			return "badfile" ;
+			return "error/badfile" ;
 		}
 		if(pMan.processNewPdf(userIdentification, inFile)) {
 			clearInFile();
-			return "add-pdf-confirmation";			
+			return "gen/add-pdf-confirmation";			
 		}else { 
-			return "fileexists" ;
+			return "error/fileexists" ;
 		}
 	}
 
 	@PostMapping("fillPdfFile")
 	public String fillPdf(@RequestParam("file") MultipartFile file) { 
+		System.out.println(userIdentification);
 		if((inFile = UpDownController.uploadText(file)) == (null)) {
-			return "badfile" ;
+			return "error/badfile" ;
 		}
 		if(!pMan.fillPdf(userIdentification, pMan.parseTextFile(inFile))) { 
 			return "error-page" ;
 		}
-		return "download-page" ;
+		return "gen/download-page" ;
 	}
 
 	@PostMapping("fillPdfText")
 	public String fillPdf(@RequestParam("email") String email) { 
+		System.out.println(userIdentification);
 		if(email.equals(null)) {
-			return "badfile" ;
+			return "error/badfile" ;
 		}
 		if(!pMan.fillPdf(userIdentification, pMan.parseTextFile(email))) { 
-			return "error-page" ;
+			return "error/error-page" ;
 		}
-		return "download-page" ;
-	}
+		return "error/download-page" ;
+	} 
 
 	public void handleFileDrop(File file) { 
 		String mime = "" ;
@@ -138,11 +139,12 @@ public class PdfGenManager {
 	public static boolean validateUser(String user, char[] pass) {
 		String storedPass = pDB.getHashedPass(user) ;
 		if(storedPass == null) { 
-			JOptionPane.showMessageDialog(null, "Invalid User") ; 
+			//JOptionPane.showMessageDialog(null, "Invalid User") ;
+			System.out.println("Invalid User") ;
 			userDisConnect();
 			return false ;
 		}
-		if(PasswordEncryptor.passwordCheck(String.valueOf(pass), storedPass)) {
+		if(pass.toString().equals(storedPass)) {
 			System.out.println(user + " is connected.");
 			//JOptionPane.showMessageDialog(null, user + " is connected.") ;
 			return true;
@@ -153,7 +155,7 @@ public class PdfGenManager {
 		return false ;
 	}
 
-	public static boolean userConnect(String user, String pass) {
+	public static boolean userConnect(String username) {
 		/*JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel,  BoxLayout.Y_AXIS));
 		JLabel lblUser = new JLabel("Enter username:");
@@ -175,12 +177,10 @@ public class PdfGenManager {
 		}
 		if(option == 0){*/
 		setPDB();
-		if(validateUser(user, pass.toCharArray()) ) {
-			setUsername(user) ;
-			prefs.put("LAST_USER", userIdentification);
-			setLogin(true) ;
-			//				pGUI.setConnectEnable(false);
-		}
+		setUsername(username) ;
+		prefs.put("LAST_USER", userIdentification);
+		setLogin(true) ;
+		//				pGUI.setConnectEnable(false);
 		return login;
 	}
 
@@ -238,9 +238,9 @@ public class PdfGenManager {
 		String password = userPassword.trim();
 		String passConf = userPassConf.trim();
 		setPDB() ;
-		if(!passwordValidation(password, passConf)) {return false; } //TODO Add error code reporting
-		if(!pDB.checkUser(username)) {return false; } 
-		pDB.createUser(username, email, (PasswordEncryptor.buildHashedPass(password.toCharArray()))) ; 
+		if(!passwordValidation(password, passConf)) {System.out.println(1); return false; } //TODO Add error code reporting
+		if(pDB.doesUserExist(username)) { System.out.println(2); return false; }
+		pDB.createUser(username, email, password) ; 
 		pMan.createUserDir(username);
 		return true;
 	}
@@ -293,5 +293,9 @@ public class PdfGenManager {
 		inFile.delete();
 		inFile = null ;
 		FileUtils.cleanDirectory(new File("user_files/temp"));
+	}
+
+	public static MyUser getUser(String name) {
+		return(pDB.getUser(name)) ;
 	}
 }

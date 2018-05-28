@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+</head>
+<body>
+	<div th:fragment="footer">
+		<br>
+		<hr>
+		<a href="/">HOME</a> 
+		<br> 
+		<a href="/login/login-page">User Login and Registration</a> 
+		<br> 
+		<a href="/pGen/showForm">Start PDF Generator</a> 
+		<br> 
+		<a href="/login/logout">Log	Out</a> 
+		<br>
+		<a href="/admin/admin-home">Administration</a> <br> <br>
+		<hr>
+		<br>
+		<p>That Guy--> <span th:text="${#request.userPrincipal.principal.username}"></span></p>
+		<br>
+		<span th:utext="${#authorization.expression('isAuthenticated()')} ? 
+			    'User is logged in' : 
+				'The user is NOT logged in'"> </span>
+	</div>
+</body>
+</html>

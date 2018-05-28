@@ -1,5 +1,6 @@
 <!DOCTYPE HTML>
-<html><head>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
   <title>PDF Gen Database</title>
 
   
@@ -8,11 +9,11 @@
 
 </head>
 <body>
+<p>Click to download your filled pdf.</p>
 
-</body>
-Click to download your filled pdf.
 <a href="/updown/dl">HERE</a>
-<br>
-<a href="/">HOME</a>
-<a href="/pGen/">Generator</a>
+
+ <div th:replace="footer.html :: footer"></div>
+</body>
+
 </html>

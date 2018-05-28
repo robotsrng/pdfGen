@@ -91,7 +91,7 @@ public class PdfManager {
 			if ( existCheck(username, fileName)) { System.out.println("File already exists"); return false ; } 
 			theFields = (ArrayList<String>) getFields(pForm);
 			pDoc.save(resDir + "/" + username + "/" + fileName) ;
-			//createTable(username);
+			createTable(username);
 			//JOptionPane.showMessageDialog(null, "PDF file added.") ;
 			System.out.println("PDF Uploaded");
 			return true;
@@ -114,7 +114,7 @@ public class PdfManager {
 	//TODO Clean up the pdf parsing. Like the checkbox options etc.
 	public boolean fillPdf(String username, String[] rawTextArray) {
 		//CHECKS IS FILE IS THERE AND SETS FILE NAME
-		if(!(retrievePdf(username, rawTextArray[0].trim()))){return false;}
+		if(!(retrievePdf(username, rawTextArray[0].trim()))){System.out.println("PMANFILL ERROR 0" );return false;}
 		ArrayList<String> data = new ArrayList<String>() ;
 		for (String line : rawTextArray) { 
 			String[] temp = line.split(",", -1) ;
@@ -130,6 +130,7 @@ public class PdfManager {
 				//		JOptionPane.showMessageDialog(null, ("Your input has a field name not found in the PDF\nIt will be skipped.\nFIELD NAME > " + temp[0]));
 				continue;
 			} catch (IOException e) {
+				System.out.println("PMANFILL ERROR");
 				return false;
 				//		JOptionPane.showMessageDialog(null, "There is an issue with the fields in the email, please check input.") ;
 			}
@@ -143,7 +144,7 @@ public class PdfManager {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}*/
-		//addDataToDB(username, data); 
+		addDataToDB(username, data); 
 		UpDownController.setDownload(pDoc, fileName) ; 
 		return true;
 	}

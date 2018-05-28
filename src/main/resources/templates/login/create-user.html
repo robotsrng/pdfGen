@@ -6,27 +6,17 @@
 </head>
 
 <body>
-<br>
-<a href="/login/">Login Here</a>
-<br>
-	<form action="#" th:action="@{create-user}" th:object="${user}" method="POST" >
+	<br>
+	<a href="login-page">Login Here</a>
+	<br>
+	<form action="#" th:action="@{create-user}" th:object="${user}" method="POST">
 		<h2 class="form-heading">Create User</h2>
-		<input type ="text" th:field="*{username}" placeholder="Username" autofocus="true" />
-		<br>
-		<br> 
-		<input type ="text" th:field="*{email}" placeholder="Email" />
-		<br> 
-		<br> 
-		<input type ="password" th:field="*{password}" placeholder="Password" />
-		<br> 
-		<br> 
-		<input type ="password" th:field="*{passConf}" placeholder="Confirm Password" />
-		<br> 
-		<br> 
+		<input type="text" th:field="*{name}" placeholder="Username" autofocus="true" /> <br> <br> <input type="text" th:field="*{email}" placeholder="Email" /> <br> <br> <input
+			type="password" th:field="*{password}" placeholder="Password" /> <br> <br> <input type="password" th:field="*{passConf}" placeholder="Confirm Password" /> <br> <br>
 		<button class="btn btn-lg btn-primary btn-block" type="submit">Log In</button>
 	</form>
 	<br>
 
-	<a href="/">HOME</a>
+	<div th:replace="footer.html :: footer"></div>
 </body>
 </html>

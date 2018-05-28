@@ -1,24 +1,18 @@
 <!DOCTYPE html >
-<html><head>
-
-  
-  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>PDF Gen Home</title></head><body>PDF GEN Web Interface<br>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
 
 
-<br>
+<meta content="text/html; charset=ISO-8859-1" http-equiv="content-type">
+<title>PDF Gen Home</title>
+</head>
+<body>
+	PDF GEN Web Interface
+	<br>
+	<br> This is the web interface for Shanes PDF Generator.
+	<br>
 
 
-This is the web interface for Shanes PDF Generator.<br>
-
-
-<br>
-<a href="login/">User Login and Registration</a>
-<br>
-<a href="/pGen/showForm">Start PDF Generator</a>
-
-<br>
-
-
-
-<br>
-</body></html>
+  <div th:replace="footer.html :: footer"></div>
+</body>
+</html>

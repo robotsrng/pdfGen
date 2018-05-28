@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html>
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
 <title>PDF Generator Start</title>
 
@@ -45,6 +45,6 @@
 	<a href="text-upload">To upload text click here</a>
 	
 	<br>
-
+ <div th:replace="footer.html :: footer"></div>
 </body>
 </html>

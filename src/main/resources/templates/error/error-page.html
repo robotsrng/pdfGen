@@ -1,5 +1,6 @@
 <!DOCTYPE HTML>
-<html><head>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
   <title>PDF Gen Database</title>
 
   
@@ -8,10 +9,9 @@
 
 </head>
 <body>
-
-</body>
 Sorry, there was an error.
 <br>
-<a href="/">HOME</a>
-<a href="/pGen">Generator</a>
+
+ <div th:replace="footer.html :: footer"></div>
+</body>
 </html>

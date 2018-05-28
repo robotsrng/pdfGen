@@ -7,13 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-
-import javax.swing.Box;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
+import java.util.List;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,9 +18,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class PdfDBManager {
 
 	private PdfGenManager pCon = null ;
-	
-	private Connection dbCon = null ;
-	
+
+	private static Connection dbCon = null ;
+
 
 	// SQL Server Connection information
 	private String dbURL ; 
@@ -36,14 +30,14 @@ public class PdfDBManager {
 	//*******************************************
 	// CONSTRUCTORS
 	//*******************************************
-	
+
 	public PdfDBManager(PdfGenManager pCon) { 
 		this.pCon = pCon;
 		dbURL = pCon.prefs.get("DB_URL", "jdbc:mysql://localhost:3306/mysql") ; 
 		username = pCon.prefs.get("DB_USER", "hbstudent") ; 
 		password = pCon.prefs.get("DB_PASS", "hbstudent") ; 
 	}
-	
+
 	//*******************************************
 	// SQL Handler Methods 
 	//*******************************************
@@ -66,7 +60,7 @@ public class PdfDBManager {
 	}
 
 	public void addDataToDB(String username, String tableName, ArrayList<String> textArray) { 
-	
+
 		Statement stmt = null;
 		String columns = "" ;
 		String values = "" ;
@@ -102,7 +96,7 @@ public class PdfDBManager {
 			return false ;
 		}
 	}
-	
+
 	public void connectToDB() {
 		dBAccessPrompt();
 		connectDB();
@@ -128,19 +122,19 @@ public class PdfDBManager {
 		myPanel.add(new JLabel("Password: "));
 		myPanel.add(pass);
 		myPanel.add(Box.createHorizontalStrut(15));
-*/
+		 */
 		//int result = JOptionPane.showConfirmDialog(null, myPanel, 
 		//		"Please enter Database Information", JOptionPane.OK_CANCEL_OPTION);
 		//if (result == JOptionPane.OK_OPTION) {
-	//		dbURL = db.getText();
-	//		username = user.getText();
-	//		password = String.copyValueOf(pass.getPassword());
-			pCon.prefs.put("DB_URL", dbURL) ; 
-			pCon.prefs.put("DB_USER", username) ; 
-			pCon.prefs.put("DB_PASS", password) ; 
+		//		dbURL = db.getText();
+		//		username = user.getText();
+		//		password = String.copyValueOf(pass.getPassword());
+		pCon.prefs.put("DB_URL", dbURL) ; 
+		pCon.prefs.put("DB_USER", username) ; 
+		pCon.prefs.put("DB_PASS", password) ; 
 		//}
 	}
-	
+
 	private void connectDB() {
 		try {
 			System.out.println("Connected") ;
@@ -155,15 +149,28 @@ public class PdfDBManager {
 	//*******************************************
 
 	public boolean createUser(String user, String email, String hashedPass) {
+		Statement qry = null ;
 		PreparedStatement stmt = null ;
 		try {
-			stmt = dbCon.prepareStatement("INSERT INTO user_cred.user_credentials VALUES(id, ?, ?, ?, NOW() ) ;");
-			stmt.setString(1, user);
-			stmt.setString(2, email);
-			stmt.setString(3, hashedPass);
+			stmt = dbCon.prepareStatement("INSERT INTO spring_security.user VALUES(user_id, 1, ?, ?, ?, ?, ?) ;");
+			stmt.setString(1, email);
+			stmt.setString(2, user);
+			stmt.setString(3, user);
+			stmt.setString(4, null);
+			stmt.setString(5, hashedPass);
+			stmt.executeUpdate() ;
+			qry = dbCon.createStatement();
+			String idQry = "SELECT `user_id` FROM spring_security.user WHERE `name` = '" + user + "' ;";
+			ResultSet rs = stmt.executeQuery(idQry) ;
+			rs.next();
+			int userID = rs.getInt(1);
+			stmt = dbCon.prepareStatement("INSERT INTO spring_security.user_role VALUES(?, ?, ?) ;");
+			stmt.setInt(1, userID);
+			stmt.setString(2, user);
+			stmt.setInt(3, 1);
 			stmt.executeUpdate() ;
 			createSchema(user);
-			System.out.println("User Created");
+			System.out.println("User Created : " + user);
 			//JOptionPane.showMessageDialog(null, "User Created") ;
 		} catch (SQLException e) {
 			System.out.println("User Already Exists") ;
@@ -185,14 +192,15 @@ public class PdfDBManager {
 		}
 	}
 
-	public boolean checkUser(String text) {
+	public static boolean doesUserExist(String name) {
 		Statement stmt = null ;
 		try {
 			stmt = dbCon.createStatement();
-			String sql = "SELECT `username` FROM user_cred.user_credentials WHERE `username` = '" + text + "' ;";
+			String sql = "SELECT `name` FROM spring_security.user WHERE `name` = '" + name + "' ;";
+
 			ResultSet rs = stmt.executeQuery(sql) ;
 			if(!rs.next()) { 
-				return true ;
+				return false ;
 
 				//TODO add second check here to see if there is a schema created.
 
@@ -200,7 +208,7 @@ public class PdfDBManager {
 			}else {
 				System.out.println("User Aleady Exists");
 				//JOptionPane.showMessageDialog(null, "User Already Exists");
-				return false;
+				return true;
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -208,14 +216,56 @@ public class PdfDBManager {
 		}
 	}
 
+	public static ArrayList<MyUser> getAllUsers() { 
+		Statement stmt = null ;
+		ArrayList<MyUser> users = new ArrayList<MyUser>() ;
+		try {
+			stmt = dbCon.createStatement();
+			String sql = "SELECT * FROM spring_security.user ;";
+			ResultSet rs = stmt.executeQuery(sql) ;
+			while(rs.next()) { 
+				MyUser tempUser = new MyUser(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getString(7));
+				users.add(tempUser);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return users ;
+	}
+
+	public MyUser getUser(String name) {
+		Statement stmt = null ;
+		try {
+			stmt = dbCon.createStatement();
+			String sql = "SELECT * FROM spring_security.user WHERE `name` = '" + name + "' ;";
+			ResultSet rs = stmt.executeQuery(sql) ;
+			if(!rs.next()) { 
+				return null ;
+
+				//TODO add second check here to see if there is a schema created.
+
+
+			}else {
+				MyUser user = new MyUser();
+				user.setName(rs.getString(0));
+				user.setPassword(rs.getString(1));
+				user.setActive(rs.getInt(2));
+				return user ;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 	public String getHashedPass(String user) {
 		PreparedStatement stmt = null ;
 		try {
-			stmt = dbCon.prepareStatement("SELECT * FROM user_cred.user_credentials WHERE `username` = ? ;");
+			stmt = dbCon.prepareStatement("SELECT password FROM spring_security.user WHERE `name` = ? ;");
 			stmt.setString(1,  user);
 			ResultSet rs = stmt.executeQuery() ;
 			rs.next() ;
-			return rs.getString(4) ;
+			System.out.println("GET HASHED PASS : " + rs.getString(1));
+			return rs.getString(1) ;
 		}catch(SQLException se) {
 			System.out.println("No user with that username.");
 			return null;
@@ -229,7 +279,7 @@ public class PdfDBManager {
 	public boolean changePassword(String user, String oldPassword, String newPassword) {
 		PreparedStatement stmt = null ;
 		try {
-			stmt = dbCon.prepareStatement("INSERT INTO user_cred.user_credentials WHERE `username` = ? COLUMN(`hashed_pass`) VALUES(?) ;");
+			stmt = dbCon.prepareStatement("INSERT INTO spring_security.user WHERE `name` = ? COLUMN(`hashed_pass`) VALUES(?) ;");
 			stmt.setString(1, user);
 			stmt.setString(2, newPassword);
 			System.out.println(stmt) ;
@@ -242,6 +292,7 @@ public class PdfDBManager {
 		}
 		return true ;
 	}
+
 }
 
 
