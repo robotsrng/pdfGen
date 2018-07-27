@@ -1,24 +1,24 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorator="layout/layout">
 <head>
 <title>PDF Gen Database</title>
-
-
-
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
 </head>
 <body>
-	<a href="/login/create-user-form">Create New User Here</a>
-	<br>
-	<form th:action="@{/login/login-page}" th:object="${user}" method="POST">
-		<h2 class="form-heading">User Login</h2>
-		<input type="text" th:field="*{name}" placeholder="Username" autofocus="true" /> <br> <br> <input type="email" th:field="*{email}" placeholder="Email" /> <br> <br> <br> <br>
-		<input type="password" th:field="*{password}" placeholder="Password" /> <br> <br>
-		<button class="btn btn-lg btn-primary btn-block" type="submit">Log In</button>
-	</form>
-	<br>
-
+	<section layout:fragment="content">
+		<a href="/login/create-user">Create New User Here</a>
+		<br>
+		<form th:action="@{/login/login-page}" th:object="${myUser}" method="POST">
+			<h2 class="form-heading">User Login</h2>
+			<input type="text" th:field="*{name}" placeholder="Username" autofocus="true" />
+			<br>
+			<br>
+			<input type="password" th:field="*{password}" placeholder="Password" />
+			<br>
+			<br>
+			<button class="btn btn-lg btn-primary btn-block" type="submit">Log In</button>
+		</form>
+		<br>
+	</section>
 	<div th:replace="footer.html :: footer"></div>
 </body>
 </html>

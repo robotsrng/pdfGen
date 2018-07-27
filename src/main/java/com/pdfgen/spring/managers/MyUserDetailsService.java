@@ -20,11 +20,8 @@ public class MyUserDetailsService implements UserDetailsService {
 	public static void getAllUserDetails() {
 		ArrayList<MyUser> MyUsers = PdfDBManager.getAllUsers() ;
 		for(MyUser user : MyUsers) {                 
-			UserObject tempUserObj = new UserObject(user.getName(), user.getPassword(), "ADMIN") ;
-			users.add(tempUserObj);
-		}
-		for (UserObject user : users) { 
-			System.out.println("UO : " + user.name);
+			UserObject tempUserObj = new UserObject(user.getName(), user.getPassword(), PdfDBManager.getUserAuthority(user.getName())) ;
+			users.add(tempUserObj) ;
 		}
 	}
 
@@ -40,7 +37,6 @@ public class MyUserDetailsService implements UserDetailsService {
 	}
 
 	private UserDetails toUserDetails(UserObject userObject) {
-		System.out.println("MYUSERDETAILS " + userObject.password) ;
 		return User.withUsername(userObject.name)
 				.password("{noop}" + userObject.password)
 				.roles(userObject.role).build();

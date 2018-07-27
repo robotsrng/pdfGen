@@ -1,22 +1,31 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorator="layout/layout">
 <head>
-<title>PDF Gen Database</title>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 </head>
-
 <body>
-	<br>
-	<a href="login-page">Login Here</a>
-	<br>
-	<form action="#" th:action="@{create-user}" th:object="${user}" method="POST">
-		<h2 class="form-heading">Create User</h2>
-		<input type="text" th:field="*{name}" placeholder="Username" autofocus="true" /> <br> <br> <input type="text" th:field="*{email}" placeholder="Email" /> <br> <br> <input
-			type="password" th:field="*{password}" placeholder="Password" /> <br> <br> <input type="password" th:field="*{passConf}" placeholder="Confirm Password" /> <br> <br>
-		<button class="btn btn-lg btn-primary btn-block" type="submit">Log In</button>
-	</form>
-	<br>
 
-	<div th:replace="footer.html :: footer"></div>
+	<section layout:fragment="content">
+		<p th:text="${message0}"></p>
+		<p th:text="${message1}"></p>
+		<p th:text="${message2}"></p>
+		<p th:text="${message3}"></p>
+		<p th:text="${message4}"></p>
+		<p th:text="${message5}"></p>
+		<form name="createUserForm" action="#" th:action="@{create-user}" th:object="${myUser}" method="POST">
+			<h2 class="form-heading">Create User</h2>
+			<input type="text" th:field="*{name}" placeholder="Username" autofocus="true" />
+			<br>
+			<br>
+			<input type="password" th:field="*{password}" placeholder="Password" />
+			<br>
+			<br>
+			<input type="password" th:field="*{passConf}" placeholder="Confirm Password" />
+			<br>
+			<br>
+			<button class="btn btn-lg btn-primary btn-block" type="submit">Log In</button>
+		</form>
+		<br>
+	</section>
 </body>
 </html>

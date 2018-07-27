@@ -7,10 +7,11 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
 
-import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.Length;
-import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.Transient;
 
 @Entity
@@ -21,58 +22,52 @@ public class MyUser {
 	public MyUser() {
 	}
 	
-	public MyUser(int id,
-			int active,
-			String email,
-			String lastName,
+	public MyUser(int userId,
 			String name,
-			String passConf,
-			String password) {
+			String password,
+			String passConf) {
 		super();
-		this.id = id;
-		this.email = email;
+		this.userId = userId;
+		this.username = name;
 		this.password = password;
 		this.passConf = passConf;
-		this.name = name;
-		this.lastName = lastName;
-		this.active = active;
 	}
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Column(name = "user_id")
-	private int id;
-	@Column(name = "email")
-	@Email(message = "*Please provide a valid Email")
-	@NotEmpty(message = "*Please provide an email")
-	private String email;
+	private int userId;
+
+	@Column(name = "username")
+	@NotEmpty(message="*Username cannot be empty")
+	private String username;
+	
 	@Column(name = "password")
-	@Length(min = 5, message = "*Your password must have at least 5 characters")
+	@Length(min = 2, message = "Your password must have at least 2 characters")
 	@NotEmpty(message = "*Please provide your password")
 	@Transient
 	private String password;
 
-	@Length(min = 5, message = "*Your password must have at least 5 characters")
-	@NotEmpty(message = "*Please provide your password")
+	@Length(min = 2, message = "")
+	@NotEmpty(message = "*Please repeat your password")
 	@Transient
 	private String passConf;
-	@Column(name = "name")
-	@NotEmpty(message = "*Please provide your name")
-	private String name;
-	@Column(name = "last_name")
-	@NotEmpty(message = "*Please provide your last name")
-	private String lastName;
-	@Column(name = "active")
-	private int active;
 
-
-
+	
 	public int getId() {
-		return id;
+		return userId;
 	}
 
 	public void setId(int id) {
-		this.id = id;
+		this.userId = id;
+	}
+
+	public String getName() {
+		return username;
+	}
+	
+	public void setName(String name) {
+		this.username = name;
 	}
 
 	public String getPassword() {
@@ -83,38 +78,6 @@ public class MyUser {
 		this.password = password;
 	}
 
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getLastName() {
-		return lastName;
-	}
-
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
-	}
-
-	public String getEmail() {
-		return email;
-	}
-
-	public void setEmail(String email) {
-		this.email = email;
-	}
-
-	public int getActive() {
-		return active;
-	}
-
-	public void setActive(int active) {
-		this.active = active;
-	}
-
 	public String getPassConf() {
 		return passConf;
 	}
@@ -122,5 +85,4 @@ public class MyUser {
 	public void setPassConf(String passConf) {
 		this.passConf = passConf;
 	}
-
 }

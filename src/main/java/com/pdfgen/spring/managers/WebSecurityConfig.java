@@ -3,7 +3,6 @@ package com.pdfgen.spring.managers;
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -11,21 +10,14 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-	String [] publicUrls = new String [] {
-			"/pGen/**"
-	};
-
 	String [] loginUrls = new String [] {
-			"/", "/login/*"
+			"/", "/error/**", "/login/create-user-form", "/login/create-user", "/login/login-page", "/error/**", "/login/logout-success", "/login/logout", "/login/logout-error"
 	};
 
 	//	@Autowired
@@ -34,28 +26,23 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private DataSource dataSource;
 
-	//@Value("${pdfgen.queries.users-query}")
-	//private String usersQuery;
-
-	//@Value("${pdfgen.queries.roles-query}")
-	//private String rolesQuery;
-
-	
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http.authorizeRequests()
 		.antMatchers(loginUrls).permitAll()
-		.antMatchers("/admin/**").hasAuthority("ADMIN").anyRequest()
-		.authenticated().and().csrf().disable().formLogin()
-		.loginPage("/login/login-page").failureUrl("/login/login-error")
-		.defaultSuccessUrl("/login/login-success")
+		.antMatchers("/gen/**").authenticated()
+		.antMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
+		.and().csrf().disable().formLogin()
+		.loginPage("/login/login-page").failureUrl("/error?code=bad-login")
+		.defaultSuccessUrl("/success?code=good-login")
 		.usernameParameter("name")
 		.passwordParameter("password")
 		.and().logout()
-		.logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-		.logoutSuccessUrl("/login/logout-success").deleteCookies("JSESSIONID")
-		.invalidateHttpSession(true).and().exceptionHandling()
-		.accessDeniedPage("/access-denied")
+		.logoutRequestMatcher(new AntPathRequestMatcher("/login/logout"))
+		.logoutSuccessUrl("/success?code=good-logout").deleteCookies("JSESSIONID")
+		.invalidateHttpSession(true).and()
+		.exceptionHandling()
+		.accessDeniedPage("/error?code=access-denied")
 		;
 	}
 

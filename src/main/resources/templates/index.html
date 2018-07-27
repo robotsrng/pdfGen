@@ -1,0 +1,48 @@
+<!DOCTYPE html >
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorator="layout/layout">
+<head>
+
+</head>
+<body>
+
+	<section layout:fragment="content">
+		<h1>Welcome to the PDF Generator.</h1>
+		<br>
+		<h3>Oh man, how do I explain this useless bit of fancy?</h3>
+		<p> So the PDF Generator v1.0 works as so... 
+			<br>
+			<br>
+			If you have alot of people filling out the same form, or sending you 
+			the same information that always goes onto the same paperwork, 
+			then this website may help you! 
+			<br>
+			<br>
+		 	Simply make sure that the pdf form to be filled is built using
+		 	named fields and upload it. Then, whenever you get an email or 
+		 	entry, either upload it as a txt file or copy and paste it and 
+		 	PDFGen will automatically fill your form and allow you to download it!
+		 	<br>
+		 	<br>
+		 	How neat right?
+		 	<br>
+		 	<br>
+		 	Caveats (of course there's cav
+		 	eats):
+		 	-The first line of your file or text has to be the PDF filename
+		 	-The file or text has to be formatted like so:<br><br>
+		 		[filename]<br>
+		 		[fieldname] , [data]<br><br>
+		 	
+		 	Filename at the top followed by however many lines you want, as long as
+		 	they are [fieldname][comma][data].
+		 	<br><br>
+		 	Once that is all set up (usually whatever email or form service can be
+		 	set to these specs) you can start uploading and accessing your data 
+		 	all willy nilly!
+		 	<br>
+		 	Neat, right?	
+		 	<br>
+	</section>
+
+</body>
+</html>

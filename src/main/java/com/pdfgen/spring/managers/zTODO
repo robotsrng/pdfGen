@@ -1,7 +1,5 @@
 Add auto email functionality ie. send birthday reminders etc.
 Add admin functions
-	-view and change users
-	-select and print users
-	
-ability to print old forms
-search and view old forms
+	-delete users
+	-delete files
+	-delete selected records

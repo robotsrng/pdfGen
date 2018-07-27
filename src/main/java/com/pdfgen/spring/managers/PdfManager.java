@@ -26,21 +26,22 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class PdfManager {
 
-	public File inFile = null ;
+	public static File inFile = null ;
 	public static PDDocument pDoc;
 	public static PDAcroForm pForm;
 	public static ArrayList<String> theFields = new ArrayList<String>() ;  
 	public static ArrayList<String> userSavedFiles = new ArrayList<String>() ; 
-	private String resDir = "user_files" ;
-	private String fileName ;
-	private String tableName ;
-	private PdfGenManager pCon = null ;
+	private static String resDir = "/home/srng/Documents/user_files" ;
+	private static String fileName ;
+	private static String tableName ;
+	private static PdfGenManager pCon = null ;
 
 	//*******************************************
 	// CONSTRUCTORS
 	//*******************************************
 
 	public PdfManager(PdfGenManager con) {
+		createInitDir();
 		this.pCon = con ;
 		setResDir(con.prefs.get("RESDIR_PATH", resDir)) ;
 	}
@@ -50,7 +51,7 @@ public class PdfManager {
 	// Helpers
 	//*******************************************
 
-	public void clearInfo() {
+	public static void clearInfo() {
 		inFile = null ;
 		pForm = null ;
 		theFields = new ArrayList<String>() ;
@@ -59,13 +60,13 @@ public class PdfManager {
 		userSavedFiles.clear();
 	}
 
-	private boolean checkConnection() { 
+	private static boolean checkConnection() { 
 		if(pCon != null && pCon.checkConnection()) { 
 			return true ;
 		}else { return false; } 
 	}
 
-	private boolean existCheck(String username, String fileName) {
+	private static boolean existCheck(String username, String fileName) {
 		getSavedFiles(username);
 		for(String key : userSavedFiles) { 
 			if(fileName.equals(key)) { 
@@ -81,10 +82,12 @@ public class PdfManager {
 	// PDF HANDLERS
 	//*******************************************
 
-	public boolean processNewPdf(String username, File file) {
+	public static boolean processNewPdf(String username, File file) {
 		setInFile(file);
 		setFileName(file.getName()) ;
+		System.out.println(fileName);
 		setTableName() ;
+		createUserDir(username) ;
 		try {
 			pDoc = PDDocument.load(file) ;
 			pForm = pDoc.getDocumentCatalog().getAcroForm();
@@ -112,9 +115,11 @@ public class PdfManager {
 	}
 
 	//TODO Clean up the pdf parsing. Like the checkbox options etc.
-	public boolean fillPdf(String username, String[] rawTextArray) {
+	public static boolean fillPdf(String username, String[] rawTextArray, boolean reprint ) {
 		//CHECKS IS FILE IS THERE AND SETS FILE NAME
-		if(!(retrievePdf(username, rawTextArray[0].trim()))){System.out.println("PMANFILL ERROR 0" );return false;}
+		setFileName(rawTextArray[0].trim()) ;
+		setTableName();
+		if((retrievePdf(username, fileName ) == null)){System.out.println("PMANFILL ERROR 0" );return false;}
 		ArrayList<String> data = new ArrayList<String>() ;
 		for (String line : rawTextArray) { 
 			String[] temp = line.split(",", -1) ;
@@ -144,144 +149,186 @@ public class PdfManager {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}*/
-		addDataToDB(username, data); 
+		if(!reprint) {
+			addDataToDB(username, data);
+		}
 		UpDownController.setDownload(pDoc, fileName) ; 
 		return true;
 	}
 
-public boolean retrievePdf(String username, String fileName) {
-	setFileName(fileName) ;
-	setTableName();
-	try {
-		pDoc = PDDocument.load(new File(resDir + "/" + username + "/" + fileName)) ;
-		pForm = pDoc.getDocumentCatalog().getAcroForm();
-		theFields = (ArrayList<String>) getFields(pForm);
-		return true ;
-	}catch(FileNotFoundException fe) { 
-		//JOptionPane.showMessageDialog(null, "Appropriate File Not Found, File Not In System.");
-		return false ;
-	}catch (IOException e) {
-		e.printStackTrace();
-		return false ;
-	}
-}
-
-public String[] parseTextFile(File textFile) { 
-	FileReader in = null ;
-	BufferedReader br = null ;
-	try {
-		in = new FileReader(textFile) ;
-		br = new BufferedReader(in) ;
-	} catch (FileNotFoundException e) {
-		e.printStackTrace();
-	}
-	String email = "" ;
-	String line ;
-	try {
-		while ( (line = br.readLine() ) != null ) { 
-			email += (line) + " / " ; 
+	public static PDDocument retrievePdf(String username, String fileName) {
+		try {
+			System.out.println(username);
+			pDoc = PDDocument.load(new File(resDir + "/" + username + "/" + fileName)) ;
+			pForm = pDoc.getDocumentCatalog().getAcroForm();
+			theFields = (ArrayList<String>) getFields(pForm);
+			return pDoc ;
+		}catch(FileNotFoundException fe) { 
+			fe.printStackTrace();
+			System.out.println("File Not Found");
+			return null ;
+		}catch (IOException e) {
+			e.printStackTrace();
+			return null ;
 		}
-	} catch (IOException e) {
-		e.printStackTrace();
 	}
-	return (email.split(" / ", -1)) ;
-}
 
-public String[] parseTextFile(String textArea) { 
-	System.out.println(textArea);
-	return (textArea.split("\n")) ;
-}
-
-//*******************************************
-// MYSQL DATABASE FUNCTIONS
-//*******************************************
-
-public void createTable(String username) {
-	if(!checkConnection()) { return ;} 
-	if(fileName == null || theFields == null) { System.out.println("No file for table creation.") ; return ; }
-	pCon.createDBTable(username, tableName, theFields);
-}
-
-public void addDataToDB(String username, ArrayList<String> textArray) { 
-	if(!checkConnection()) { return ;} 
-	pCon.addDataToDB(username, tableName, textArray) ; 
-}
-
-//*******************************************
-// Getters and Setters
-//*******************************************
-
-public void setFileName(String fileName) { 
-	this.fileName = fileName ;
-}
-
-private void getSavedFiles(String username) {
-	File dir = new File(resDir + "/" + username);
-	File[] directoryListing = dir.listFiles();
-	if (directoryListing != null) {
-		for (File file : directoryListing) {
-			userSavedFiles.add(file.getName());
+	public static String[] parseTextFile(File textFile) { 
+		FileReader in = null ;
+		BufferedReader br = null ;
+		try {
+			in = new FileReader(textFile) ;
+			br = new BufferedReader(in) ;
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
 		}
-	} else {
-		System.out.println("CANNOT FIND RESOURCES");
+		String email = "" ;
+		String line ;
+		try {
+			while ( (line = br.readLine() ) != null ) { 
+				email += (line) + " / " ; 
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return (email.split(" / ", -1)) ;
 	}
-	System.out.println(username + " File List Retrieved") ;
-}
 
-public static List<String> getFields(PDAcroForm pForm) { 
-	if( pForm == null ) {
-		System.out.println("NO FIELDS") ; 
-		return  Collections.emptyList();
+	public static String[] parseTextFile(String textArea) { 
+		return (textArea.split("\n")) ;
 	}
-	return StreamSupport.stream(pForm.getFieldTree().spliterator(), false)
-			.filter(field -> (field instanceof PDTerminalField))
-			.map(field -> field.getFullyQualifiedName())
-			.collect(Collectors.toList());
-}
 
-public File getInFile() {
-	return inFile;
-}
+	//*******************************************
+	// MYSQL DATABASE FUNCTIONS
+	//*******************************************
 
-public void setInFile(File inFile) {
-	this.inFile = inFile;
-}
-
-private void setResDir(String resDir) {
-	this.resDir = resDir ;
-}
-
-public String getResDir() {
-	return resDir;
-}
-
-public void setTopLevelDir(String username) {
-	//JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
-	//jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-	//int returnValue = jfc.showOpenDialog(null);
-	//if (returnValue == JFileChooser.APPROVE_OPTION) {
-	//	setResDir(jfc.getSelectedFile().getAbsolutePath());
-	//	pCon.prefs.put("RESDIR_PATH", jfc.getSelectedFile().getAbsolutePath());
-	//}
-	//createUserDir(username);
-}
-
-public String getFileName() {
-	return fileName;
-}
-
-private void setTableName() {
-	tableName =  fileName.substring(0, (fileName.length() - 4)) ;
-}
-
-public void createUserDir(String username) {
-	Path path = Paths.get(resDir + "/" + username);
-	if (!Files.exists(path)) {
-		new File(resDir + "/" + username).mkdir();
-	}else {
-	System.out.println("This user already has an existing profile");
-	//	JOptionPane.showOptionDialog(null, "This user already has an existing profile.", "User Already Exists", 1, 3, null, null, path) ; 
-		return ;
+	public static void createTable(String username) {
+		if(!checkConnection()) { return ;} 
+		if(fileName == null || theFields == null) { System.out.println("No file for table creation.") ; return ; }
+		pCon.createDBTable(username, tableName, theFields);
 	}
-}
+
+	public static void addDataToDB(String username, ArrayList<String> textArray) { 
+		if(!checkConnection()) { return ;} 
+		pCon.addDataToDB(username, tableName, textArray) ; 
+	}
+
+	//*******************************************
+	// Getters and Setters
+	//*******************************************
+
+	public static void setFileName(String file) { 
+		fileName = "" ;
+		if(!file.substring(file.length() - 4).startsWith(".p")) { 
+			fileName +=  file + ".pdf" ;
+		}else {
+			fileName = file;
+		}
+	}
+
+	private static void getSavedFiles(String username) {
+		File dir = new File(resDir + "/" + username);
+		File[] directoryListing = dir.listFiles();
+		if (directoryListing != null) {
+			for (File file : directoryListing) {
+				userSavedFiles.add(file.getName());
+			}
+		} else {
+			System.out.println("CANNOT FIND RESOURCES");
+		}
+		System.out.println(username + " File List Retrieved") ;
+	}
+
+	public static List<String> getFields(PDAcroForm pForm) { 
+		if( pForm == null ) {
+			System.out.println("NO FIELDS") ; 
+			return  Collections.emptyList();
+		}
+		return StreamSupport.stream(pForm.getFieldTree().spliterator(), false)
+				.filter(field -> (field instanceof PDTerminalField))
+				.map(field -> field.getFullyQualifiedName())
+				.collect(Collectors.toList());
+	}
+
+	public File getInFile() {
+		return inFile;
+	}
+
+	public static void setInFile(File file) {
+		inFile = file;
+	}
+
+	private void setResDir(String res) {
+		resDir = res ;
+	}
+
+	public static String getResDir() {
+		return resDir;
+	}
+
+	public void setTopLevelDir(String username) {
+		//JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+		//jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		//int returnValue = jfc.showOpenDialog(null);
+		//if (returnValue == JFileChooser.APPROVE_OPTION) {
+		//	setResDir(jfc.getSelectedFile().getAbsolutePath());
+		//	pCon.prefs.put("RESDIR_PATH", jfc.getSelectedFile().getAbsolutePath());
+		//}
+		//createUserDir(username);
+	}
+
+	public String getFileName() {
+		return fileName;
+	}
+
+	private static void setTableName() {
+		if(fileName.substring((fileName.length() - 4)).startsWith(".p")) { 
+			tableName =  fileName.substring(0, (fileName.length() - 4)) ;
+		}else {
+			tableName = fileName;
+		}
+	}
+
+	public static void createUserDir(String username) {
+		Path path = Paths.get(resDir + "/" + username);
+		if (!Files.exists(path)) {
+			new File(resDir + File.separator + username).mkdir();
+		}else { 
+			System.out.println("This user already has an existing profile");
+			//	JOptionPane.showOptionDialog(null, "This user already has an existing profile.", "User Already Exists", 1, 3, null, null, path) ; 
+			return ;
+		}
+	}
+
+	public void createInitDir() {
+		File folder = new File(resDir);
+		if (folder.exists() && folder.isDirectory()) {
+		} else {
+			folder.mkdirs();
+		}
+		folder = new File(resDir + File.separator + "temp");
+		if (folder.exists() && folder.isDirectory()) {
+		} else {
+			folder.mkdirs();
+		}
+	}
+
+	public static void deleteUserDir(String user) {
+		Path path = Paths.get(resDir + "/" + user);
+		try {
+			Files.delete(path);
+		} catch (IOException e) {
+			System.out.println("User Directory already deleted");		
+		}
+	}
+
+	public static void deleteUserFile(String user, String filename) {
+		Path path = Paths.get(resDir + "/" + user + "/" + filename + ".pdf");
+		try {
+			Files.delete(path);
+		} catch (Exception e) {
+			System.out.println("User already deleted");		
+		}
+	}
+
 }

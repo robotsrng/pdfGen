@@ -1,0 +1,54 @@
+<!DOCTYPE html >
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorator="layout/layout">
+<head>
+
+</head>
+<body>
+
+	<section layout:fragment="content">
+
+		<form action="#" th:action="@{search-users}" method="POST">
+			<h2 class="form-heading">Search For User</h2>
+			<input type="text" th:value="*{search}" name="search" placeholder="Search Term" autofocus="true" />
+			<br>
+			<br>
+			<button class="btn btn-lg btn-primary btn-block" type="submit">Search</button>
+		</form>
+		<br>
+		<h3>USER LIST</h3>
+		<br>
+		<table class="table">
+			<thead>
+				<tr>
+					<th scope="col">Name</th>
+					<th scope="col">View</th>
+					<th scope="col">Storage</th>
+					<th scope="col">Role</th>
+					<th scope="col">Delete</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr th:each="user : ${myUsers}">
+					<td scope="row" th:text="${user.name}"></td>
+					<td><form action="#" th:action="@{/gen/file-management}" method="post">
+							<input type="hidden" name="user" th:value="${user.name}" />
+							<button th:id="user-saved-files-button" type="submit">View Files</button>
+						</form></td>
+					<td><form action="#" th:action="@{/gen/admin-show-form}" method="post">
+							<input type="hidden" name="user" th:value="${user.name}" />
+							<button th:id="admin-generator-button" type="submit">Access</button>
+						</form></td>
+					<td><form action="#" th:action="@{/admin/admin-change-privilege}" method="post">
+							<input type="hidden" name="user" th:value="${user.name}" />
+							<button th:id="change-privileges-button" type="submit">Change Role</button>
+						</form></td>
+					<td><form action="#" th:action="@{/admin/admin-delete-user}" method="post">
+							<input type="hidden" name="user" th:value="${user.name}" />
+							<button th:id="delete-user-button" type="submit">Delete User</button>
+						</form></td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+</body>
+</html>

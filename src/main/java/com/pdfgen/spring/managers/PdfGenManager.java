@@ -9,21 +9,22 @@ import java.util.ArrayList;
 import java.util.prefs.Preferences;
 
 import org.apache.commons.io.FileUtils;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 
-//import com.pdfgen.spring.run.PdfEmailGUI;
 @Controller
-@RequestMapping("pGen")
+@RequestMapping("gen")
 public class PdfGenManager {
 
-	//	public static PdfEmailGUI pGUI ;
 	private static File inFile ;
 	public static PdfManager pMan ;
 	public static PdfDBManager pDB ; 
@@ -36,14 +37,43 @@ public class PdfGenManager {
 	// PAGE REDIRECTION
 	//*******************************************
 
-	@GetMapping(value = {"/showForm", "/"})
-	public String showForm() {
+	@RequestMapping(value = {"/show-form"})
+	public String showForm(Model model) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String currentPrincipalName = authentication.getName();
+		model.addAttribute("user", currentPrincipalName);
+		return "gen/generator-page" ;
+	}
+	
+	@RequestMapping(value = {"/admin-show-form"})
+	public String showForm(Model model, @ModelAttribute("user") String user ) {
+		model.addAttribute("user", user);
 		return "gen/generator-page" ;
 	}
 
 	@GetMapping("/text-upload")
-	public String textUpload() {
+	public String textUpload(Model model, @ModelAttribute("user") String user) {
+		model.addAttribute("user", user);
 		return "gen/text-upload";
+	}
+	
+	@GetMapping("/admin-home")
+	public String adminHome(Model model) {
+		return "gen/admin-home" ;
+	}
+	
+	@RequestMapping("/file-management")
+	public String userDataManagement(Model model, @ModelAttribute("user") String user) {
+		if(user.equals(null) || user.isEmpty() ) { 
+			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+			String currentPrincipalName = authentication.getName();
+			model.addAttribute("user", currentPrincipalName);
+			model.addAttribute("userFiles", PdfDBManager.findUserFiles(currentPrincipalName) ) ;		
+		}else { 
+			model.addAttribute("user", user);
+			model.addAttribute("userFiles", PdfDBManager.findUserFiles(user) ) ;		
+		}
+		return "file-list" ;
 	}
 
 	//*******************************************
@@ -54,60 +84,112 @@ public class PdfGenManager {
 		prefs = Preferences.userNodeForPackage(this.getClass());
 		pMan = new PdfManager(this) ;
 		pDB = new PdfDBManager(this) ; 
-		checkLocal();
 		setPDB() ;
 	} 
-
-	private void checkLocal() {
-		String resDir = prefs.get("RESDIR_PATH", "user_files");
-		Path path = Paths.get(resDir + "/" + userIdentification);
-		if (!Files.exists(path)) {
-			new File(resDir + "/" + userIdentification).mkdir();
-		}else {  
-			return ;
-		}
-	}
 
 	//*******************************************
 	// PDF Handler Methods
 	//*******************************************
 
-	@PostMapping("addPdfTemplate")
-	public static String addPdfTemplate(@RequestParam("file") MultipartFile file) throws IllegalStateException, IOException {
+	@PostMapping("/addPdfTemplate")
+	public static String addPdfTemplate(Model model, @ModelAttribute("user") String user, @RequestParam("file") MultipartFile file) throws IllegalStateException, IOException {
 		if((inFile = UpDownController.uploadPdf(file)) == (null)) {
-			return "error/badfile" ;
+			model.addAttribute("message", CodeRepo.getMessage("bad-file"));
+			return "error" ;
 		}
-		if(pMan.processNewPdf(userIdentification, inFile)) {
+		if(PdfManager.processNewPdf(user, inFile)) {
 			clearInFile();
-			return "gen/add-pdf-confirmation";			
+			model.addAttribute("message", CodeRepo.getMessage("add-pdf-confirmation"));
+			return "success";			
 		}else { 
-			return "error/fileexists" ;
+			model.addAttribute("message", CodeRepo.getMessage("file-exists"));
+			clearInFile();
+			return "error" ;
 		}
 	}
 
-	@PostMapping("fillPdfFile")
-	public String fillPdf(@RequestParam("file") MultipartFile file) { 
-		System.out.println(userIdentification);
+	@RequestMapping("/fillPdfFile")
+	public String fillPdf(Model model, @ModelAttribute("user") String user, @RequestParam("file") MultipartFile file) { 
 		if((inFile = UpDownController.uploadText(file)) == (null)) {
-			return "error/badfile" ;
+			model.addAttribute("message", CodeRepo.getMessage("bad-file"));
+			return "error" ;
 		}
-		if(!pMan.fillPdf(userIdentification, pMan.parseTextFile(inFile))) { 
-			return "error-page" ;
+		if(!PdfManager.fillPdf(user, PdfManager.parseTextFile(inFile), false)) {
+			model.addAttribute("message", CodeRepo.getMessage("bad-email-file"));
+			return "error" ;
 		}
-		return "gen/download-page" ;
+		return "download-page" ;
+	}
+	
+	@RequestMapping("/download-user-file")
+	private String downloadUserFile(Model model, @ModelAttribute("user") String user, @ModelAttribute("filename") String filename) {
+		UpDownController.setDownload(PdfManager.retrievePdf(user, filename), filename + ".pdf");
+		return "download-page" ;
+	}
+	
+	@RequestMapping("/view-file-database")
+	private String viewFileDatabase(Model model, @ModelAttribute("user") String user, @ModelAttribute("filename") String filename) {
+		model.addAttribute("tableHeaders", PdfDBManager.getTableHeadersFromDB(user, filename)) ;
+		model.addAttribute("tableData", PdfDBManager.getDataFromTable(user, filename));
+		return "record-list" ;
 	}
 
+	@RequestMapping("print-from-database")
+	public String printFromDatabase(Model model, @ModelAttribute("user") String user, @ModelAttribute("filename") String filename, @ModelAttribute("header") ArrayList<String> header, @ModelAttribute("data") ArrayList<String> data) {
+		PdfManager.setFileName(filename);
+		PdfManager.fillPdf(user, PdfManager.parseTextFile(parseDatabase(filename, header, data)), true) ;
+		return "download-page" ;
+	}
+	
+	public String parseDatabase(String filename, ArrayList<String> headers, ArrayList<String> data) { 
+		String email = filename + "\n" ; 
+		email += (headers.get(0).substring(1) + ", " + data.get(0).substring(1) + "\n") ;
+		for (int i = 1 ; i < headers.size()-2 ; i += 1 ) {
+			email += (headers.get(i) + ", " + data.get(i) + "\n") ;
+		}
+		email += (headers.get(headers.size()-2).substring(0,headers.get(headers.size()-2).length()) + ", " + data.get(data.size()-1).substring(0,data.get(data.size()-1).length()-1) + "\n") ;
+		return email ;
+
+	}
+	
+	@RequestMapping("/delete-file")
+	private String deleteFile(Model model, @ModelAttribute("user") String user, @ModelAttribute("filename") String filename) {
+		PdfManager.deleteUserFile(user, filename);
+		PdfDBManager.deleteUserTable(user, filename);
+		model.addAttribute("user", user ) ;
+		model.addAttribute("userFiles", PdfDBManager.findUserFiles(user) ) ;
+		return "file-list" ;
+	}
+	
 	@PostMapping("fillPdfText")
-	public String fillPdf(@RequestParam("email") String email) { 
-		System.out.println(userIdentification);
+	public String fillPdf(Model model, @ModelAttribute("user") String user, @ModelAttribute("email") String email) { 
 		if(email.equals(null)) {
-			return "error/badfile" ;
+			return "error" ;
 		}
-		if(!pMan.fillPdf(userIdentification, pMan.parseTextFile(email))) { 
-			return "error/error-page" ;
+		if(!PdfManager.fillPdf(user, PdfManager.parseTextFile(email), false)) { 
+			return "error" ;
 		}
-		return "error/download-page" ;
-	} 
+		return "ownload-page" ;
+	}
+	
+	@RequestMapping("/delete-record")
+	private String deleteRecord(Model model, @ModelAttribute("user") String user, @ModelAttribute("filename") String filename, @ModelAttribute("record") ArrayList<String> record) {
+		PdfDBManager.deleteUserRecord(user, filename, record);
+		model.addAttribute("user", user ) ;
+		model.addAttribute("tableHeaders", PdfDBManager.getTableHeadersFromDB(user, filename)) ;
+		model.addAttribute("tableData", PdfDBManager.getDataFromTable(user, filename));
+		return "record-list" ;
+	}
+	
+	public String fillPdf(String user, String filename, String data) { 
+		if(data.equals(null)) {
+			return "error" ;
+		}
+		if(!PdfManager.fillPdf(userIdentification, PdfManager.parseTextFile(data), false)) { 
+			return "error" ;
+		}
+		return "download-page" ;
+	}
 
 	public void handleFileDrop(File file) { 
 		String mime = "" ;
@@ -117,10 +199,10 @@ public class PdfGenManager {
 			e.printStackTrace();
 		}
 		if(mime.equals("application/pdf")) { 
-			pMan.processNewPdf(userIdentification, file);
+			PdfManager.processNewPdf(userIdentification, file);
 		}
 		else { 
-			pMan.fillPdf(userIdentification, pMan.parseTextFile(file));
+			PdfManager.fillPdf(userIdentification, PdfManager.parseTextFile(file), false);
 		}
 	}
 
@@ -139,48 +221,23 @@ public class PdfGenManager {
 	public static boolean validateUser(String user, char[] pass) {
 		String storedPass = pDB.getHashedPass(user) ;
 		if(storedPass == null) { 
-			//JOptionPane.showMessageDialog(null, "Invalid User") ;
 			System.out.println("Invalid User") ;
 			userDisConnect();
 			return false ;
 		}
 		if(pass.toString().equals(storedPass)) {
 			System.out.println(user + " is connected.");
-			//JOptionPane.showMessageDialog(null, user + " is connected.") ;
 			return true;
 		}
 		userDisConnect() ;
 		System.out.println("Bad Login Info. Check username and password.");
-		//JOptionPane.showMessageDialog(null, "Bad Login Info. Check username and password.");
 		return false ;
 	}
 
 	public static boolean userConnect(String username) {
-		/*JPanel panel = new JPanel();
-		panel.setLayout(new BoxLayout(panel,  BoxLayout.Y_AXIS));
-		JLabel lblUser = new JLabel("Enter username:");
-		JLabel lblPass = new JLabel("Enter password:");
-		JTextField user = new JTextField(15) ;
-		user.setText(prefs.get("LAST_USER", ""));
-		JPasswordField pass = new JPasswordField(15);
-		pass.requestFocusInWindow();
-		panel.add(lblUser);
-		panel.add(user);
-		panel.add(lblPass);
-		panel.add(pass);
-		String[] options = new String[]{"OK", "Cancel", "New User"};
-		int option = JOptionPane.showOptionDialog(null, panel, "User Login",
-				JOptionPane.NO_OPTION, JOptionPane.PLAIN_MESSAGE,
-				null, options, options[0]);
-		if(option == 1) {
-			return;
-		}
-		if(option == 0){*/
 		setPDB();
 		setUsername(username) ;
-		prefs.put("LAST_USER", userIdentification);
 		setLogin(true) ;
-		//				pGUI.setConnectEnable(false);
 		return login;
 	}
 
@@ -189,58 +246,17 @@ public class PdfGenManager {
 		System.out.println(userIdentification + " disconnected.");
 		resetUsername();
 		setLogin(false);
-		pMan.clearInfo();
-		//		pGUI.setConnectEnable(true);
+		PdfManager.clearInfo();
 	}
 
-	public static boolean userCreate(String name, String userEmail, String userPassword, String userPassConf) { 
-		//		JPanel panel = new JPanel();
-		//		panel.setLayout(new BoxLayout(panel,  BoxLayout.Y_AXIS));
-		//		JLabel lblCreate = new JLabel("Enter new user information") ; 
-		//		JLabel lblUser = new JLabel("Enter username:");
-		//		JLabel lblEmail = new JLabel("Enter email:");
-		//		JLabel lblPass = new JLabel("Enter password:");
-		//		JLabel lblPass2 = new JLabel("Re-Enter password:");
-		//		JTextField user = new JTextField(25) ;
-		//		JTextField email = new JTextField(25) ;
-		//		JPasswordField pass = new JPasswordField(25);
-		//		JPasswordField pass2 = new JPasswordField(25);
-		//		panel.add(lblCreate);
-		//		panel.add(lblUser);
-		//		panel.add(user);
-		//		panel.add(lblEmail);
-		//		panel.add(email);
-		//		panel.add(lblPass);
-		//		panel.add(pass);
-		//		panel.add(lblPass2);
-		//		panel.add(pass2);
-		//
-		//		String[] options = new String[]{"OK", "Cancel"};
-		//		int option = JOptionPane.showOptionDialog(null, panel, "User Creation",
-		//				JOptionPane.NO_OPTION, JOptionPane.PLAIN_MESSAGE,
-		//				null, options, options[0]);
-		//		
-		//		
-		//		if(option == 0){
-		//			if(!Arrays.equals(pass.getPassword(), pass2.getPassword())) { //TODO ADD VALIDATION FUNCTION
-		//				JOptionPane.showMessageDialog(null, "Your passwords do not match") ;
-		//				pass.setText("");
-		//				pass2.setText("");
-		//			}else if(!pDB.checkUser(user.getText())) { 
-		//				pDB.createUser(user.getText(), email.getText(), (PasswordEncryptor.buildHashedPass(pass.getPassword()))) ;
-		//				pMan.createUserDir(user.getText()) ;
-		//			}
-		//		}else if(option == 1) { 
-		//			return ;
-		//		}
+	public static boolean userCreate(String name, String userPassword, String userPassConf) { 
 		String username = name.trim();
-		String email = userEmail.trim().toLowerCase();
 		String password = userPassword.trim();
 		String passConf = userPassConf.trim();
 		setPDB() ;
-		if(!passwordValidation(password, passConf)) {System.out.println(1); return false; } //TODO Add error code reporting
-		if(pDB.doesUserExist(username)) { System.out.println(2); return false; }
-		pDB.createUser(username, email, password) ; 
+		if(!passwordValidation(password, passConf)) {return false; }
+		if(PdfDBManager.doesUserExist(username)) {return false; }
+		pDB.createUser(username, password) ;
 		pMan.createUserDir(username);
 		return true;
 	}
@@ -276,7 +292,7 @@ public class PdfGenManager {
 
 	public static void setPDB() {
 		if(!checkConnection()) {
-			pDB.connectToDB();
+			pDB.connectDB();
 		}
 	}
 
@@ -292,10 +308,10 @@ public class PdfGenManager {
 	private static void clearInFile() throws IOException {
 		inFile.delete();
 		inFile = null ;
-		FileUtils.cleanDirectory(new File("user_files/temp"));
+		FileUtils.cleanDirectory(new File(PdfManager.getResDir() + File.separator + "temp"));
 	}
 
 	public static MyUser getUser(String name) {
-		return(pDB.getUser(name)) ;
+		return(PdfDBManager.getUser(name)) ;
 	}
 }

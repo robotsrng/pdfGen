@@ -1,0 +1,70 @@
+<!DOCTYPE html >
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorator="layout/layout">
+<head>
+
+</head>
+<body>
+
+	<section layout:fragment="content">
+
+		<div sec:authorize="hasAuthority('ROLE_ADMIN')">
+			<form action="#" th:action="@{search-users}" method="post">
+				<input type="hidden" name="user" th:value="${user}">
+				<input type="submit" value="Go Back">
+			</form>
+		</div>
+		<br>
+		<h3>
+			Privileges For: <span th:text="${user}"></span>
+		</h3>
+		<br>
+		<h2>
+			The user is currently : <span th:text="${userPriv}"></span>
+		</h2>
+		<br>
+		<table class="table">
+			<thead>
+				<tr>
+					<th scope="col">User Name</th>
+					<th scope="col">USER</th>
+					<th scope="col">ADMIN</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td scope="row"><span th:text="${user}"></span></td>
+					<td><form th:action="@{/admin/admin-change-privilege}" method="post">
+							<input type="hidden" name="user" th:value="${user}" />
+							<input type="hidden" th:name="role" th:value="2" />
+							<button type="submit">USER</button>
+						</form></td>
+					<td><form th:action="@{/admin/admin-change-privilege}" method="post">
+							<input type="hidden" name="user" th:value="${user}" />
+							<input type="hidden" th:name="role" th:value="1" />
+							<button type="submit">ADMIN</button>
+						</form></td>
+
+				</tr>
+			</tbody>
+		</table>
+		<hr>
+		<h3>Change user password:</h3>
+
+		<form name="changePassForm" action="#" th:action="@{/admin/admin-change-password}" method="POST">
+			<input type="hidden" name="user" th:value="${user}" />
+			<input type="password" name="oldPass" th:value="${oldPass}" placeholder="Old Password" />
+			<br>
+			<br>
+			<input type="password" name="newPass" th:value="${newPass}" placeholder="New Password" />
+			<br>
+			<br>
+			<input type="password" name="passConf" th:value="${passConf}" placeholder="Confirm New Password" />
+			<br>
+			<br>
+			<button type="submit">Change</button>
+		</form> 
+
+
+	</section>
+</body>
+</html>

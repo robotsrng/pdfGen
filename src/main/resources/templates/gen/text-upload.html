@@ -1,36 +1,19 @@
-<!DOCTYPE HTML>
-
-<html>
-
+<!DOCTYPE html >
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorator="layout/layout">
 <head>
-<title>PDF Generator Start</title>
-
-
-
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 </head>
 <body>
-  <span style="font-weight: bold;">GENERATOR</span>
-	<br style="font-weight: bold;">
 
-	<br> Heya Fucker
-	<br>
-
-	<br>
-
-
-	<h3>TEXT Upload:</h3>
-	<form method="POST" name="textUploadForm" action="fillPdfText" id="email">
-		<textarea name="email" id="email" class="text" rows="40" cols="80">... </textarea>
-		<input type="submit" value="Text Upload" />
-	</form>
-
-
-
-
-
-	<br>
- <div th:replace="footer.html :: footer"></div>
+	<section layout:fragment="content">
+		<span style="font-weight: bold;">GENERATOR</span>
+		<br>
+		<h3>TEXT Upload:</h3>
+		<form method="POST" name="textUploadForm" action="fillPdfText" id="email">
+			<input type="hidden" name="user" th:value="${user}">
+			<textarea name="email" id="email" class="text" rows="40" cols="80">Copy and Paste Email or Text file here... </textarea>
+			<input type="submit" value="Text Upload" />
+		</form>
+	</section>
 </body>
 </html>

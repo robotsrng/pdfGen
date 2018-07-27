@@ -20,20 +20,22 @@ import org.springframework.web.multipart.MultipartFile;
 public class UpDownController {
 
 	public static File inFile;
-	public static PDDocument downFile;
+	public static PDDocument PFile;
 	public static String downFileName;
 
 
 	public static File uploadPdf(MultipartFile file) { 
 		if(!FilenameUtils.getExtension(file.getOriginalFilename()).equals("pdf")) { 
+			System.out.println("upnull");
 			return null;
 		}
 		try {
-			inFile = new File("user_files/temp/" + file.getOriginalFilename()) ;
+			inFile = new File(PdfManager.getResDir() + File.separator + "temp" + File.separator + file.getOriginalFilename()) ;
 			FileOutputStream fos = new FileOutputStream(inFile); 
 			fos.write(file.getBytes());
 			fos.close(); 
 		}catch(Exception e) { 
+			e.printStackTrace();
 			return null;
 		}
 		return inFile;
@@ -41,7 +43,7 @@ public class UpDownController {
 	
 	public static File uploadText(MultipartFile file) { 
 		try {
-			inFile = new File("user_files/temp/" + file.getOriginalFilename()) ;
+			inFile = new File(PdfManager.getResDir() + File.separator + "temp" + File.separator + file.getOriginalFilename()) ;
 			FileOutputStream fos = new FileOutputStream(inFile); 
 			fos.write(file.getBytes());
 			fos.close(); 
@@ -53,10 +55,10 @@ public class UpDownController {
 	
 	@GetMapping("/dl")
 	@ResponseBody
-	public static boolean downloadCompletePdf(HttpServletResponse response) { 
+	public static void downloadCompletePdf(HttpServletResponse response) { 
 		try {
-			File download = new File ("user_files/temp/" + downFileName ) ;
-			downFile.save(download);
+			File download = new File (PdfManager.getResDir() + File.separator + "temp" + File.separator + downFileName ) ;
+			PFile.save(download);
 			FileInputStream is = new FileInputStream(download) ;
 			response.setContentType("application/pdf");
 			response.setHeader("Content-Disposition", "attachment; filename=\""+ downFileName +"\"");
@@ -64,13 +66,14 @@ public class UpDownController {
 			IOUtils.copy(is, response.getOutputStream()) ; 
 		}catch(Exception e) { 
 			System.out.println("ERROR DOWNLOAD PROCESS");
-			return false;
+			return ;
 		}
-		return true;
+		return ;
 	}
 
 	public static void setDownload(PDDocument pDoc, String fileName) {
-		downFile = pDoc ;
+		PFile = pDoc ;
 		downFileName = fileName;
 	}
+
 }

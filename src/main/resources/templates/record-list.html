@@ -1,0 +1,52 @@
+<!DOCTYPE html >
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorator="layout/layout">
+<head>
+
+</head>
+<body>
+
+	<section layout:fragment="content">
+
+		<div sec:authorize="hasAuthority('ROLE_ADMIN')">
+			<form action="#" th:action="@{file-management}" method="post" >
+			<input type="hidden" name="user" th:value="${user}">
+			<input type="submit" value="Go Back">
+			</form>
+		<h2>
+			Saved Files For: <span th:text="${user}"></span>
+		</h2>
+		</div>
+		<br>
+		<h3>Record List</h3>
+		<br>
+
+		<table class="table">
+			<thead>
+				<tr>
+					<th scope="col">Download</th>
+					<th scope="col" th:each="header: ${tableHeaders}"><h2 th:text="${header}"></h2></th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr th:each="rs : ${tableData}">
+					<th scope="row"><form action="#" th:action="@{/gen/print-from-database}" method="post">
+							<input type="hidden" name="user" th:value="${user}" />
+							<input type="hidden" name="filename" th:value="${filename}" />
+							<input type="hidden" name="header" th:value="${tableHeaders}" />
+							<input type="hidden" name="data" th:value="${rs}" />
+							<button th:id="view-file-database-button" type="submit">Download</button>
+						</form>
+						<form action="#" th:action="@{/gen/delete-record}" method="post">
+							<input type="hidden" name="user" th:value="${user}" />
+							<input type="hidden" name="filename" th:value="${filename}" />
+							<input type="hidden" name="record" th:value="${rs}" />
+							<button th:id="delete-record-database-button" type="submit">Delete</button>
+						</form></th>
+					<td th:each="data : ${rs}"><p th:text="${data}"></p></td>
+				</tr>
+			</tbody>
+		</table>
+
+	</section>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html >
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorator="layout/layout">
+<head>
+
+</head>
+<body>
+
+	<section layout:fragment="content">
+
+		<div sec:authorize="hasAuthority('ROLE_ADMIN')">
+			<form action="#" th:action="@{/admin/search-users}" method="post">
+				<input type="submit" value="Go Back">
+			</form>
+		</div>
+		<h2>
+			Saved Files For: <span th:text="${user}"></span>
+		</h2>
+		<br>
+		<h3>FILE LIST</h3>
+		<br>
+		<table class="table">
+			<thead>
+				<tr>
+					<th scope="col">File Name</th>
+					<th scope="col">Download</th>
+					<th scope="col">Completed</th>
+					<th scope="col">Delete</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr th:each="file : ${userFiles}">
+					<th scope="row" th:text="${file}"></th>
+					<td><form action="#" th:action="@{download-user-file}" method="post">
+							<input type="hidden" name="user" th:value="${user}" />
+							<input type="hidden" name="filename" th:value="${file} + '.pdf'" />
+							<button th:id="download-user-file-button" type="submit">Download</button>
+						</form></td>
+					<td><form action="#" th:action="@{view-file-database}" method="post">
+							<input type="hidden" name="user" th:value="${user}" />
+							<input type="hidden" name="filename" th:value="${file}" />
+							<button th:id="view-file-database-button" type="submit">View Database</button>
+						</form></td>
+					<td><form action="#" th:action="@{delete-file}" method="post">
+							<input type="hidden" name="user" th:value="${user}" />
+							<input type="hidden" name="filename" th:value="${file}" />
+							<button th:id="view-file-database-button" type="submit">Delete File</button>
+						</form></td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+</body>
+</html>
